@@ -17,37 +17,28 @@ class Cpx():
     
    def __str__(self) -> str:
       return f"{self.real:.2f} + {self.imag:.2f}i"
-    
-   @staticmethod
-   def add(z1: Cpx, z2: Cpx):
-      return Cpx(z1.real+z2.real, z1.imag+z2.imag)
+   
+   def __add__(self, z: Cpx):
+      return Cpx(self.real + z.real, self.imag + z.imag)
 
-   @staticmethod
-   def sub(z1: Cpx, z2: Cpx):
-      return Cpx(z1.real-z2.real, z1.imag-z2.imag)
+   def __sub__(self, z: Cpx):
+      return Cpx(self.real-z.real, self.imag-z.imag)
 
-   @staticmethod
-   def mul(z1: Cpx, z2: Cpx):
-      a, b = z1.real, z1.imag
-      c, d = z2.real, z2.imag
+   def __mul__(self, z: Cpx):
+      a, b = self.real, self.imag
+      c, d = z.real, z.imag
       return Cpx(a*c - b*d, a*d + b*c)
 
-   @staticmethod
-   def div(z1: Cpx, z2: Cpx):
-      u, v = z1, z1.imag
-      x, y = z2.real, z2.imag
-      return Cpx( (u*x + v*y)/(z2.mag()), (v*x-u*y)/(z2.mag()) )
+   def __div__(self, z: Cpx):
+      u, v = self, self.imag
+      x, y = z.real, z.imag
+      return Cpx( (u*x + v*y)/(z.mag()), (v*x-u*y)/(z.mag()) )
     
    def mag(self):
       return (self.real**2 + self.imag**2)**0.5
    
-   @staticmethod
-   def con(z: Cpx):
-      return Cpx(z.real, -z.imag)
-   
-   @staticmethod
-   def scal(z: Cpx, n: float):
-      return Cpx(z.real*n, z.imag*n)
+   def con(self):
+      return Cpx(self.real, -self.imag)
 
    def angl(self):
       return atan2(self.imag, self.real)
@@ -99,59 +90,54 @@ class Mtx():
       '''Counting starts with zero btw'''
       return [z.copy() for z in self.elements[n:self.rows*self.cols:self.cols]]
 
-   @staticmethod
-   def add(m1: Mtx, m2: Mtx):
-      r, c = m1.rows, m1.cols
-      assert r == m2.rows and c == m2.cols
+   def __add__(self, m: Mtx):
+      r, c = self.rows, self.cols
+      assert r == m.rows and c == m.cols
       res = Mtx(r, c)
       for i in range(r):
          for j in range(c):
-            res[i, j] = Cpx.add(m1[i, j], m2[i, j])
-      return res
-   
-   @staticmethod
-   def sub(m1: Mtx, m2: Mtx):
-      r, c = m1.rows, m1.cols
-      assert r == m2.rows and c == m2.cols
-      res = Mtx(r, c)
-      for i in range(r):
-         for j in range(c):
-            res[i, j] = Cpx.sub(m1[i, j], m2[i, j])
+            res[i, j] = self[i, j] + m[i, j]
       return res
 
-   @staticmethod
-   def scal(m1: Mtx, n: Cpx):
-      r, c = m1.rows, m1.cols
+   def __sub__(self, m: Mtx):
+      r, c = self.rows, self.cols
+      assert r == m.rows and c == m.cols
+      res = Mtx(r, c)
+      for i in range(r):
+         for j in range(c):
+            res[i, j] = self[i, j] - m[i, j]
+      return res
+
+   def scal(self, n: Cpx):
+      r, c = self.rows, self.cols
       m = Mtx(r, c)
       for i in range(r):
          for j in range(c):
-            m[i, j] = Cpx.scal(m1[i, j], n)
+            m[i, j] = self[i, j] * Cpx(n)
       return m
 
-   @staticmethod
-   def mul(m1: Mtx, m2: Mtx):
-      assert m1.cols == m2.rows
-      m = Mtx(m1.rows, m2.cols)
-      for i in range(m.rows):
-         for j in range(m.cols):
-            row = m1.row(i)
-            col = m2.col(j)
+   def __mul__(self, m: Mtx):
+      assert self.cols == m.rows
+      res = Mtx(self.rows, m.cols)
+      for i in range(res.rows):
+         for j in range(res.cols):
+            row = self.row(i)
+            col = m.col(j)
             c = Cpx(0)
 
             for k in range(len(row)):
-               c = Cpx.add(c, Cpx.mul(row[k], col[k]))
+               c += row[k] * col[k]
 
-            m[i, j] = c
-      return m
+            res[i, j] = c
+      return res
 
-   @staticmethod
-   def ten(m1: Mtx, m2: Mtx):
-      r, c = m1.rows*m2.rows, m1.cols*m2.cols
-      m = Mtx(r, c)
+   def ten(self, m: Mtx):
+      r, c = self.rows*m.rows, self.cols*m.cols
+      res = Mtx(r, c)
       for i in range(r):
          for j in range(c):
-            m[i, j] = Cpx.mul(m1[i//m1.rows, j//m1.cols], m2[i%m2.rows, j%m2.cols])
-      return m
+            res[i, j] = self[i//self.rows, j//self.cols] * m[i%m.rows, j%m.cols]
+      return res
       
 def main():
    m1 = Mtx(2, 2, [Cpx(1), Cpx(2), 
@@ -164,8 +150,10 @@ def main():
                    Cpx(3), Cpx(4),
                    Cpx(5), Cpx(6)])
    
-   print(Mtx.mul(m1, m2))
-   print(m1.mul(m2))
-   
+   x = Cpx(2, 2)
+   y = Cpx(4, 5)
+   print(m1*m2)
+   print()
+   print(m2*m1)
 
 main()
