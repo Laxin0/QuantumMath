@@ -7,7 +7,7 @@ class Cpx():
 
    def __init__(self, a: float, b: float=0, **kwargs):
       assert isinstance(a, float|int)
-      assert isinstance(a, float|int)
+      assert isinstance(b, float|int)
       if 'polar' in kwargs.keys() and kwargs['polar']:
          self.real = cos(b)*a
          self.imag = sin(b)*a
@@ -18,18 +18,22 @@ class Cpx():
    def __str__(self) -> str:
       return f"{self.real:.2f} + {self.imag:.2f}i"
    
-   def __add__(self, z: Cpx):
+   def __add__(self, val):
+      z = val if isinstance(val, Cpx) else Cpx(val)
       return Cpx(self.real + z.real, self.imag + z.imag)
 
-   def __sub__(self, z: Cpx):
+   def __sub__(self, val):
+      z = val if isinstance(val, Cpx) else Cpx(val)
       return Cpx(self.real-z.real, self.imag-z.imag)
 
-   def __mul__(self, z: Cpx):
+   def __mul__(self, val):
+      z = val if isinstance(val, Cpx) else Cpx(val)
       a, b = self.real, self.imag
       c, d = z.real, z.imag
       return Cpx(a*c - b*d, a*d + b*c)
 
-   def __div__(self, z: Cpx):
+   def __div__(self, val):
+      z = val if isinstance(val, Cpx) else Cpx(val)
       u, v = self, self.imag
       x, y = z.real, z.imag
       return Cpx( (u*x + v*y)/(z.mag()), (v*x-u*y)/(z.mag()) )
@@ -58,18 +62,18 @@ class Mtx():
          self.elements = [Cpx(0) for i in range(rows*cols)]
       else:
          assert len(elements) == rows * cols
-         self.elements = elements
+         self.elements = list(map(lambda x: x if isinstance(x, Cpx) else Cpx(x), elements))
       
       self.cols = cols
       self.rows = rows
       
    def __getitem__(self, key):
       row, col = key
-      return self.elements[self.rows*row+col]
+      return self.elements[self.cols*row+col]
 
    def __setitem__(self, key, val: Cpx):
       row, col = key
-      self.elements[self.rows*row+col] = val
+      self.elements[self.cols*row+col] = val if isinstance(val, Cpx) else Cpx(val)
 
    def __str__(self) -> str:
       s = '\n'.join(
@@ -121,14 +125,10 @@ class Mtx():
       res = Mtx(self.rows, m.cols)
       for i in range(res.rows):
          for j in range(res.cols):
-            row = self.row(i)
-            col = m.col(j)
-            c = Cpx(0)
-
-            for k in range(len(row)):
-               c += row[k] * col[k]
-
-            res[i, j] = c
+            s = Cpx(0)
+            for k in range(self.cols):
+               s += self[i, k]*m[k, j]
+            res[i, j] = s
       return res
 
    def ten(self, m: Mtx):
