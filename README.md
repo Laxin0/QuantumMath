@@ -1,2 +1,2 @@
 # About
-Simple math library. Contains classes and operations with complex numbers and matrices.
+Simple math library. Contains classes for complex numbers and matrices.
